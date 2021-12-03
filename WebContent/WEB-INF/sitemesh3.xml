@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemesh>
+	<mime-type>text/html</mime-type>
+	<mapping path="/*" decorator="/decorators/flatlab" />
+	<mapping path="/customer/*" decorator="/decorators/flatlab-h" />
+
+	<mapping path="/decorators/*" exclude="true" />
+	<mapping path="/admin/*" exclude="true" />
+	<mapping path="/assets/*" exclude="true" />
+    <mapping path="/out/*" exclude="true" />
+	<mapping path="/*.jsp" exclude="true" />
+	<mapping path="/40*" exclude="true" />
+	<mapping path="/ajax/*" exclude="true" />
+	<mapping path="/print/*" exclude="true" />
+	<mapping path="/login" exclude="true" />
+	<mapping path="/customer/login" exclude="true" />
+	<mapping path="/store/store-location-selector*" exclude="true" />
+    <mapping path="/lodop/design/content" exclude="true" />
+    <mapping path="/print/*" exclude="true" />
+	<mapping path="/store/outline/quickview*" exclude="true" />
+	<mapping path="/finance/standing-book-daily/search-accounting" exclude="true" />
+	<mapping path="/finance/standing-book-daily/search-summary" exclude="true" />
+</sitemesh>
