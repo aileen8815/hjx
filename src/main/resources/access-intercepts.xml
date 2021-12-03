@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<url-intercepts>
+  <!-- 
+	<url-intercept pattern="/security/role**" permission="1000"/>
+  <url-intercept pattern="/security/role/*" permission="1001"/>
+  <url-intercept pattern="/security/role/new" permission="1002"/>
+   -->
+</url-intercepts>

@@ -1,0 +1,767 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="higreen">
+
+    <cache/>
+
+    <select id="findStoreAreaStat" resultType="java.util.Map" useCache="false">
+        SELECT
+        A.ID,
+        A.CODE,
+        A.NAME,
+        A.STOREAREASTATUS,
+        X.USED,
+        X.ENGAGE,
+        X.MAINTAIN,
+        X.UNBIND,
+        X.RENTAREA,
+        X.TOTAL,
+        (X.TOTAL - X.USED - X.MAINTAIN - x.ENGAGE - X.UNBIND - X.RENTAREA) AS USABLE
+        FROM TJ_STORE_AREA A
+        LEFT JOIN (
+        SELECT
+        L.STOREAREA AS STOREAREA,
+        SUM(CASE WHEN ((I.STORELOCATION IS NOT NULL) AND P.STOREAREARENTSTATUS &lt;&gt; 1) THEN 1 ELSE 0 END) AS USED,
+        SUM(CASE WHEN ((L.STORELOCATIONSTATUS = 0) AND P.STOREAREARENTSTATUS &lt;&gt; 1) THEN 1 ELSE 0 END) AS UNBIND,
+        SUM(CASE WHEN ((L.STORELOCATIONSTATUS = 3) AND P.STOREAREARENTSTATUS &lt;&gt; 1)THEN 1 ELSE 0 END) AS ENGAGE,
+        SUM(CASE WHEN ((L.STORELOCATIONSTATUS = 4) AND P.STOREAREARENTSTATUS &lt;&gt; 1)THEN 1 ELSE 0 END) AS MAINTAIN,
+        SUM(CASE WHEN P.STOREAREARENTSTATUS = 1 THEN 1 ELSE 0 END) AS RENTAREA,
+        COUNT(L.ID) AS TOTAL
+        FROM TJ_STORE_LOCATION L
+        LEFT JOIN TJ_STORE_AREA P ON L.STOREAREA = P.ID
+        LEFT JOIN TJ_BOOK_INVENTORY I ON I.STORELOCATION = L.ID
+        <![CDATA[WHERE L.STORELOCATIONTYPE < 3]]>
+        GROUP BY L.STOREAREA
+        ) X ON X.STOREAREA = A.ID
+        WHERE X.TOTAL > 0
+        <if test="areaIds != null">
+            AND A.ID IN
+            <foreach item="id" index="index" collection="areaIds" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+        ORDER BY A.CODE
+    </select>
+
+    <select id="findStoreLocationStat" resultType="java.util.Map" useCache="false" parameterType="map">
+        SELECT
+        L.STOREAREA,
+        A.CODE AS STOREAREACODE,
+        A.NAME AS STOREAREANAME,
+        A.LAYOUTCORRIDERLINE,
+        L.CODE AS LOCATIONCODE,
+        L.COORDX AS COORDY,
+        L.COORDY AS COORDX,
+        L.COORDZ,
+        (CASE
+        WHEN I.STORELOCATION IS NOT NULL THEN 2
+        WHEN L.STORELOCATIONSTATUS = 0 THEN 0
+        WHEN L.STORELOCATIONSTATUS = 3 THEN 3
+        WHEN L.STORELOCATIONSTATUS = 4 THEN 4
+        ELSE 1 END
+        ) AS STORELOCATIONSTATUS,
+        L.ID as STORELOCATION,
+        C.ID as CUSTOMERID,
+        C.NAME as CUSTOMERNAME,
+        P.NAME as PRODUCTNAME,
+        I.STORECONTAINER,
+        I.AMOUNT,
+        I.WEIGHT,
+        I.INBOUNDREGISTERSERIALNO,
+        I.STOCKINTIME,
+        I.PRODUCTDETAIL,
+        L.STORELOCATIONTYPE
+        FROM TJ_STORE_LOCATION L
+        LEFT JOIN TJ_BOOK_INVENTORY I ON I.STORELOCATION = L.ID
+        LEFT JOIN TJ_PRODUCT P ON P.ID = I.PRODUCT
+        LEFT JOIN TJ_CUSTOMER C ON C.ID = I.CUSTOMER
+        INNER JOIN TJ_STORE_AREA A on A.ID = L.STOREAREA
+        <if test="areaIds != null">
+            WHERE L.STOREAREA IN
+            <foreach item="id" index="index" collection="areaIds" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+        ORDER BY STOREAREA, STORELOCATIONTYPE, COORDX, COORDY, COORDZ DESC
+    </select>
+    <!-- 仓储笼平面图 -->
+    <select id="findBAreaStoreLocationStat" resultType="java.util.Map" useCache="false" parameterType="map">
+        SELECT
+        L.STOREAREA,
+        A.CODE AS STOREAREACODE,
+        A.NAME AS STOREAREANAME,
+        A.LAYOUTCORRIDERLINE,
+        L.CODE AS LOCATIONCODE,
+        L.COORDX AS COORDY,
+        L.COORDY AS COORDX,
+        L.COORDZ,
+        (CASE
+        WHEN L.LABEL IS NOT NULL THEN 1
+        WHEN L.STORELOCATIONSTATUS = 0 THEN 0
+        WHEN L.STORELOCATIONSTATUS = 3 THEN 3
+        WHEN L.STORELOCATIONSTATUS = 4 THEN 4
+        ELSE 1 END
+        ) AS STORELOCATIONSTATUS,
+        L.ID as STORELOCATION,
+        '' as CUSTOMERID,
+        '' as CUSTOMERNAME,
+        '' as PRODUCTNAME,
+        '' as STORECONTAINER,
+        '' as AMOUNT,
+        '' as WEIGHT,
+        '' as INBOUNDREGISTERSERIALNO,
+        '' as STOCKINTIME,
+        '' as PRODUCTDETAIL,
+        L.STORELOCATIONTYPE
+        FROM TJ_STORE_LOCATION L
+        INNER JOIN TJ_STORE_AREA A on A.ID = L.STOREAREA
+        <if test="areaIds != null">
+            WHERE L.STOREAREA IN
+            <foreach item="id" index="index" collection="areaIds" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+        ORDER BY STOREAREA, COORDX, COORDY, COORDZ DESC
+    </select>
+
+    <select id="findInboundBookingStat" resultType="java.util.Map" useCache="false" parameterType="map">
+        SELECT
+        P.ID AS PRODUCTID,
+        P.CODE AS PRODUCTCODE,
+        P.NAME AS PRODUCTNAME,
+        SUM(I.STORECONTAINERCOUNT) AS CONTAINERCOUNT
+        FROM TJ_INBOUND_BOOKING_ITEM I
+        INNER JOIN TJ_INBOUND_BOOKING B ON B.ID = I.INBOUNDBOOKING
+        INNER JOIN TJ_PRODUCT P ON P.ID = I.PRODUCT
+        WHERE EXISTS (
+        SELECT * FROM TJ_STORE_AREA_PRODUCT S
+        WHERE I.PRODUCT = S.PRODUCT
+        <if test="areaIds != null">
+            AND S.STOREAREA IN
+            <foreach item="id" index="index" collection="areaIds" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+        )
+        <![CDATA[
+        AND I.STORECONTAINERCOUNT > 0
+        AND B.BOOKINGSTATUS = 1
+        ]]>
+        AND B.APPLYINBOUNDTIME BETWEEN #{startDate} AND #{endDate}
+        GROUP BY P.ID, P.CODE, P.NAME
+        ORDER BY P.CODE
+    </select>
+
+    <select id="findOutboundBookingStat" resultType="java.util.Map" useCache="false" parameterType="map">
+        SELECT
+        P.ID AS PRODUCTID,
+        P.CODE AS PRODUCTCODE,
+        P.NAME AS PRODUCTNAME,
+        SUM(O.STORECONTAINERCOUNT) AS CONTAINERCOUNT
+        FROM TJ_OUTBOUND_BOOKING_ITEM O
+        INNER JOIN TJ_OUTBOUND_BOOKING B ON B.ID = O.OUTBOUNDBOOKING
+        INNER JOIN TJ_PRODUCT P ON P.ID = O.PRODUCT
+        WHERE EXISTS
+        (
+        SELECT * FROM TJ_STORE_AREA_PRODUCT S
+        WHERE O.PRODUCT = S.PRODUCT
+        <if test="areaIds != null">
+            AND S.STOREAREA IN
+            <foreach item="id" index="index" collection="areaIds" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+        )
+        <![CDATA[
+        AND O.STORECONTAINERCOUNT > 0
+        AND B.BOOKINGSTATUS = 1
+        ]]>
+        AND B.APPLYOUTBOUNDTIME BETWEEN #{startDate} AND #{endDate}
+        GROUP BY P.ID, P.CODE, P.NAME
+        ORDER BY P.CODE
+    </select>
+
+    <select id="findCheckItemByOutboundRegisterId" resultType="java.util.Map" useCache="false" parameterType="map">
+        select row_number() over (order by cc.name, dd.name, bb.spec) NUM,
+         dd.name as PRODUCTNAME,sum(bb.amount) as AMOUNT,sum(bb.weight) as WEIGHT,bb.spec as SPEC,count(bb.id) as CONTAINERCOUNT,
+			to_char(bb.stockinTime,'yyyy-mm-dd') as STOCKINTIME,cc.name as STOREAREA
+			from TJ_OUTBOUND_CHECK_ITEM bb
+			inner join TJ_PRODUCT dd on bb.product = dd.id
+			inner join TJ_STORE_Location aa on bb.storelocation = aa.id 
+			inner join TJ_STORE_AREA cc on aa.storearea = cc.id
+			where bb.outboundregister = #{outboundRegisterId} 
+			group by cc.name, dd.name, bb.spec, to_char(bb.stockinTime,'yyyy-mm-dd')
+    </select>
+    
+    <select id="findCheckItemTotalByOutboundRegisterId" resultType="java.util.Map" useCache="false" parameterType="map">
+        select dd.name as PRODUCTNAME,count(aa.id) as CONTAINERCOUNT,sum(bb.STORAGECHARGESAMOUNT) as STORAGECHARGESAMOUNT,
+			to_char(bb.settledTime,'yyyy-mm-dd') as STOCKINTIME,cc.name as STOREAREA, sum(bb.weight/1000) as WEIGHT
+			from TJ_OUTBOUND_CHECK_ITEM bb
+				inner join TJ_PRODUCT dd on bb.product = dd.id
+				inner join TJ_STORE_Location aa on bb.storelocation = aa.id 
+				inner join TJ_STORE_AREA cc on aa.storearea = cc.id
+			where bb.outboundregister = #{outboundRegisterId}
+				group by cc.name, dd.name, to_char(bb.settledTime,'yyyy-mm-dd')
+    </select>
+    <!-- <select id="findTotalByOutboundRegisterId" resultType="java.util.Map" useCache="false" parameterType="map">
+        select row_number() over (order by cc.name, dd.name, bb.spec) NUM,
+         dd.name as PRODUCTNAME,sum(bb.amount) as AMOUNT,sum(bb.weight) as WEIGHT,bb.spec as SPEC,count(aa.id) as CONTAINERCOUNT,
+			to_char(bb.stockinTime,'yyyy-mm-dd') as STOCKINTIME,cc.name as STOREAREA
+			from tj_stock_out bb
+			inner join TJ_PRODUCT dd on bb.product = dd.id
+			inner join TJ_STORE_Location aa on bb.storelocation = aa.id 
+			inner join TJ_STORE_AREA cc on aa.storearea = cc.id
+			where bb.outboundregister = #{outboundRegisterId} and bb.stockOutStatus &lt;&gt; 6
+			group by cc.name, dd.name, bb.spec, to_char(bb.stockinTime,'yyyy-mm-dd')
+    </select> -->
+
+    <select id="findWareHouseDaily" resultType="java.util.Map" useCache="false" parameterType="map">
+    	select 
+			customer.name as  customerName, 
+			nvl(( 
+				select
+					sum(bookinventory.amount) as sumamount
+				from tj_book_inventory_his bookinventory
+					inner join tj_customer cus on bookinventory.customer=cus.id
+				where 
+					activeTime &lt;= to_date(#{inboundDateTimeAddOneDay}, 'yyyy-mm-dd' ) 
+					and (inactiveTime >to_date(#{inboundDateTimeAddOneDay}, 'yyyy-mm-dd' ) or inactiveTime is null) 
+					and cus.id=customer.id 
+				group by cus.id
+			),0)  as stockAmountCount,
+			
+			nvl(( 
+				select 
+					sum(bookinventory.weight) as sumweight 
+				from tj_book_inventory_his bookinventory  
+					inner join tj_customer cus on bookinventory.customer=cus.id
+				where 
+					activeTime &lt;= to_date(#{inboundDateTimeAddOneDay}, 'yyyy-mm-dd' ) 
+					and (inactiveTime > to_date(#{inboundDateTimeAddOneDay}, 'yyyy-mm-dd' )  or inactiveTime is null) 
+					and cus.id=customer.id 
+				group by cus.id
+			),0)  as stockWeightCount,
+			
+			nvl(( 
+				select 
+					count(bookinventory.storeContainer) as stockcount
+				from tj_book_inventory_his bookinventory 
+					inner join tj_customer cus on bookinventory.customer=cus.id
+				where activeTime &lt;= to_date(#{inboundDateTimeAddOneDay}, 'yyyy-mm-dd' )  
+					and (inactiveTime > to_date(#{inboundDateTimeAddOneDay}, 'yyyy-mm-dd' )  or inactiveTime is null) 
+					and cus.id=customer.id
+				group by cus.id
+			),0)  as stockContainerCount,
+			
+			nvl(( 
+				select 
+					sum(receipt.amount) as sumamount
+				from tj_inbound_register inRegister 
+					--inner join TJ_STOCK_IN stockin on stockin.inboundRegister=inRegister.id
+					inner join tj_inbound_receipt_item receipt on inRegister.id=receipt.inboundRegister  
+					inner join tj_customer cus on inRegister.customer=cus.id    
+				where  
+					inRegister.stockInStatus in (1,2,3,4,5) 
+					and inRegister.inboundTime BETWEEN to_date(#{inboundDateTime}, 'yyyy-mm-dd' )  
+					and to_date(#{inboundDateTimeAddOneDay}, 'yyyy-mm-dd' )  and cus.id =customer.id
+			  	group by cus.id 
+			),0)  as inboundAmountCount,
+			
+			nvl(( 
+				select     
+					sum(receipt.weight) as sumweight  
+				from tj_inbound_register inRegister  
+					--inner join TJ_STOCK_IN stockin on stockin.inboundRegister=inRegister.id
+					inner join tj_inbound_receipt_item receipt on inRegister.id=receipt.inboundRegister  
+					inner join tj_customer cus on inRegister.customer=cus.id   
+				where  
+					inRegister.stockInStatus in (1,2,3,4,5) 
+					and inRegister.inboundTime BETWEEN to_date(#{inboundDateTime}, 'yyyy-mm-dd' )  
+					and to_date(#{inboundDateTimeAddOneDay}, 'yyyy-mm-dd' )  and cus.id =customer.id
+				group by cus.id 
+			),0)  as inboundWeightCount,
+			 
+			nvl(( 
+				select 
+					count(receipt.id) as stockcount
+				from tj_inbound_register inRegister   
+					--inner join TJ_STOCK_IN stockin on stockin.inboundRegister=inRegister.id
+					inner join tj_inbound_receipt_item receipt on inRegister.id=receipt.inboundRegister
+					inner join tj_customer cus on inRegister.customer=cus.id
+				where  
+					inRegister.stockInStatus in (1,2,3,4,5) 
+					and inRegister.inboundTime BETWEEN to_date(#{inboundDateTime}, 'yyyy-mm-dd' )  
+					and to_date(#{inboundDateTimeAddOneDay}, 'yyyy-mm-dd' )  and cus.id =customer.id
+				group by cus.id  
+			),0)  as inboundContainerCount,
+			 
+			nvl((
+				select   
+					sum(stockout.amount) as sumamount
+				from tj_outbound_register outRegister
+					inner join tj_stock_out stockout on outRegister.id=stockout.outboundRegister 
+					inner join tj_customer cus on stockout.customer=cus.id    
+				where 
+					outRegister.stockOutStatus in (1,2,3,4,5) 
+			 		and stockout.stockOutStatus in (3) 
+					and outRegister.outboundTime BETWEEN to_date(#{inboundDateTime}, 'yyyy-mm-dd' ) 
+					and to_date(#{inboundDateTimeAddOneDay}, 'yyyy-mm-dd' )  and cus.id =customer.id
+				group by cus.id 
+			),0) as outboundAmountCount,
+			
+			nvl((
+			 select 
+			 	sum(stockout.weight) as sumweight  
+			 from tj_outbound_register outRegister
+			 	inner join tj_stock_out stockout on outRegister.id=stockout.outboundRegister 
+			 	inner join tj_customer cus on stockout.customer=cus.id   
+			 where 
+			 	outRegister.stockOutStatus in (1,2,3,4,5) 
+			 	and stockout.stockOutStatus in (3)
+			 	and outRegister.outboundTime BETWEEN to_date(#{inboundDateTime}, 'yyyy-mm-dd' ) 
+			 	and to_date(#{inboundDateTimeAddOneDay}, 'yyyy-mm-dd' )  and cus.id =customer.id
+			 group by cus.id 
+			),0) as outboundWeightCount,
+			
+			nvl((
+			 select 
+			 	count(stockout.id) as stockcount
+			 from tj_outbound_register outRegister
+			 	inner join tj_stock_out stockout on outRegister.id=stockout.outboundRegister 
+			 	inner join tj_customer cus on stockout.customer=cus.id    
+			 where 
+			 	outRegister.stockOutStatus in (1,2,3,4,5)
+			 	and stockout.stockOutStatus in (3)
+			 	and outRegister.outboundTime BETWEEN to_date(#{inboundDateTime}, 'yyyy-mm-dd' ) 
+			 	and to_date(#{inboundDateTimeAddOneDay}, 'yyyy-mm-dd' )  and cus.id =customer.id
+			 group by cus.id 
+			),0) as outboundContainerCount
+			from tj_customer customer where customer.id = #{customerId}
+    </select>
+
+    <select id="findTotalByStockTakingId" resultType="java.util.Map" useCache="false" parameterType="map">
+    	select 
+    		CUSTOMERNAME,
+			sum(amount) as AMOUNT,sum(storeContainerCount) as STORECONTAINERCOUNT,
+			sum(weight)/1000 as WEIGHT,sum(stockTakingAmount) as STOCKTAKINGAMOUNT,
+			sum(storeTakingContainerCount) as STORETAKINGCONTAINERCOUNT,
+			sum(stockTakingWeight)/1000 as STOCKTAKINGWEIGHT, sum(stockTakingAmount) - sum(amount)  as AMOUNTNEW,
+			(sum(stockTakingWeight) - sum(weight))/1000  as WEIGHTNEW,
+			sum(storeTakingContainerCount) - sum(storeContainerCount)  as CONTAINERCOUNTNEW,
+			'' as REMARK
+		from(
+			select 
+				tc.name as customername,
+				sum(tstr.amount) as amount,
+				count(tstr.id) as storeContainerCount,
+				sum(tstr.weight) as weight,
+				sum(tstr.stockTakingAmount) as stockTakingAmount,
+				sum(tstr.stockTakingWeight) as stockTakingWeight,
+				sum(CASE WHEN (tstr.stockTakingWeight > 0) THEN 1 ELSE 0 END) AS storeTakingContainerCount
+			from tj_stock_taking_result tstr
+			inner join tj_stock_taking tst on tst.id=tstr.stocktaking
+			inner join tj_customer tc on tc.id=tstr.customer
+			where tstr.stockTaking = #{stockTakingId}
+			group by tc.name
+		) aa
+		group by aa.customername
+    </select>
+
+    <select id="findFinanceAccountingByDateRangeAndCustomerId" resultType="standingBookDaily"
+            useCache="false" parameterType="map">
+		<![CDATA[
+
+        select
+            inboundDateTime,
+            inboundDateText,
+            inboundWeightCount,
+            inboundAmountCount,
+            inboundContainerCount,
+            outboundWeightCount,
+            outboundAmountCount,
+            outboundContainerCount,
+            stockWeightCount,
+            stockAmountCount,
+            stockContainerCount,
+            containerStorage,
+            rentalAreaStorage,
+            weightStorage,
+            amountStorage,
+            shipment,
+            sorting,
+            handling,
+            unloading,
+            shrinkwrap,
+            ketonehandling,
+            writeCode,
+            disposal,
+            colding,
+            sideUnloading,
+            inUnloading, 
+            receivableFee,
+            actualFee,
+            receivableBalance
+		from
+        (
+		select
+            to_date('2000-01-01', 'yyyy-mm-dd') as inboundDateTime,
+            '上月结存' as inboundDateText,
+            0 as inboundWeightCount,
+            0 as inboundAmountCount,
+            0 as inboundContainerCount,
+            0 as outboundWeightCount,
+            0 as outboundAmountCount,
+            0 as outboundContainerCount,
+            stockWeightCount,
+            stockAmountCount,
+            stockContainerCount,
+            0 as containerStorage,
+            0 as rentalAreaStorage,
+            0 as weightStorage,
+            0 as amountStorage,
+            0 as shipment,
+            0 as sorting,
+            0 as handling,
+            0 as unloading,
+            0 as shrinkwrap,
+            0 as ketonehandling,
+            0 as writeCode,
+            0 as disposal,
+            0 as colding,
+            0 as sideUnloading,
+            0 as inUnloading,
+            0 as receivableFee,
+            0 as actualFee,
+            receivableBalance
+		from tj_standing_book_daily
+		where inboundDateTime = #{rollingDate}
+		and customer = #{customerId}
+		union all
+		select
+            inboundDateTime,
+            to_char(inboundDateTime, 'yyyy-mm-dd') as inboundDateText,
+            inboundWeightCount,
+            inboundAmountCount,
+            inboundContainerCount,
+            outboundWeightCount,
+            outboundAmountCount,
+            outboundContainerCount,
+            stockWeightCount,
+            stockAmountCount,
+            stockContainerCount,
+            containerStorage,
+            rentalAreaStorage,
+            weightStorage,
+            amountStorage,
+            shipment,
+            sorting,
+            handling,
+            unloading,
+            shrinkwrap,
+            ketonehandling,
+            writeCode,
+            disposal,
+            colding,
+            sideUnloading,
+            inUnloading,
+            receivableFee,
+            actualFee,
+            receivableBalance
+        from tj_standing_book_daily
+		where inboundDateTime >= #{startDate}
+		and inboundDateTime <= #{endDate}
+		and customer = #{customerId}
+		union all
+		select
+            to_date('2099-12-31', 'yyyy-mm-dd') as inboundDateTime,
+            '本月汇总' as inboundDateText,
+            sum(inboundWeightCount) as inboundWeightCount,
+            sum(inboundAmountCount) as inboundAmountCount,
+            sum(inboundContainerCount) as inboundContainerCount,
+            sum(outboundWeightCount) as outboundWeightCount,
+            sum(outboundAmountCount) as outboundAmountCount,
+            sum(outboundContainerCount) as outboundContainerCount,
+            0 as stockWeightCount,
+            0 as stockAmountCount,
+            0 as stockContainerCount,
+            sum(containerStorage) as containerStorage,
+            sum(rentalAreaStorage) as rentalAreaStorage,
+            sum(weightStorage) as weightStorage,
+            sum(amountStorage) as amountStorage,
+            sum(shipment) as shipment,
+            sum(sorting) as sorting,
+            sum(handling) as handling,
+            sum(unloading) as unloading,
+            sum(shrinkwrap) as shrinkwrap,
+            sum(ketonehandling) as ketonehandling,
+            sum(writeCode) as writeCode,
+            sum(disposal) as disposal,
+            sum(colding) as colding,
+            sum(sideUnloading) as sideUnloading,
+            sum(inUnloading) as inUnloading,
+            sum(receivableFee) as receivableFee,
+            sum(actualFee) as actualFee,
+            0 as receivableBalance
+		from tj_standing_book_daily
+		where inboundDateTime >= #{startDate}
+		and inboundDateTime <= #{endDate}
+		and customer = #{customerId}
+		) x
+		order by inboundDateTime
+
+        ]]>
+	</select>
+
+    <select id="findFinanceSummaryByDateRangeAndCustomerId" resultType="standingBookDaily"
+            useCache="false" parameterType="map">
+        <![CDATA[
+
+		select
+		customerId,
+		customerName,
+		'-' as inboundDateText,
+		sum(inboundWeightCount) as inboundWeightCount,
+		sum(inboundAmountCount) as inboundAmountCount,
+		sum(inboundContainerCount) as inboundContainerCount,
+		sum(outboundWeightCount) as outboundWeightCount,
+		sum(outboundAmountCount) as outboundAmountCount,
+		sum(outboundContainerCount) as outboundContainerCount,
+		sum(stockWeightCount) as stockWeightCount,
+		sum(stockAmountCount) as stockAmountCount,
+		sum(stockContainerCount) as stockContainerCount,
+		sum(containerStorage) as containerStorage,
+		sum(rentalAreaStorage) as rentalAreaStorage,
+		sum(weightStorage) as weightStorage,
+		sum(amountStorage) as amountStorage,
+		sum(shipment) as shipment,
+		sum(sorting) as sorting,
+		sum(handling) as handling,
+		sum(unloading) as unloading,
+		sum(shrinkwrap) as shrinkwrap,
+		sum(ketonehandling) as ketonehandling,
+		sum(writeCode) as writeCode,
+		sum(disposal) as disposal,
+        sum(colding) as colding,
+        sum(sideUnloading) as sideUnloading,
+        sum(inUnloading) as inUnloading,
+		sum(receivableFee) as receivableFee,
+		sum(actualFee) as actualFee,
+		sum(receivableFee-actualFee) as receivableBalance
+		from
+		(
+		select
+		s.customer as customerId,
+		c.name as customerName,
+		sum(inboundWeightCount) as inboundWeightCount,
+		sum(inboundAmountCount) as inboundAmountCount,
+		sum(inboundContainerCount) as inboundContainerCount,
+		sum(outboundWeightCount) as outboundWeightCount,
+		sum(outboundAmountCount) as outboundAmountCount,
+		sum(outboundContainerCount) as outboundContainerCount,
+		0 as stockWeightCount,
+		0 as stockAmountCount,
+		0 as stockContainerCount,
+		sum(containerStorage) as containerStorage,
+		sum(rentalAreaStorage) as rentalAreaStorage,
+		sum(weightStorage) as weightStorage,
+		sum(amountStorage) as amountStorage,
+		sum(shipment) as shipment,
+		sum(sorting) as sorting,
+		sum(handling) as handling,
+		sum(unloading) as unloading,
+		sum(shrinkwrap) as shrinkwrap,
+		sum(ketonehandling) as ketonehandling,
+		sum(writeCode) as writeCode,
+		sum(disposal) as disposal,
+        sum(colding) as colding,
+        sum(sideUnloading) as sideUnloading,
+        sum(inUnloading) as inUnloading,
+		sum(receivableFee) as receivableFee,
+		sum(actualFee) as actualFee,
+		sum(receivableFee-actualFee) as receivableBalance
+		from tj_standing_book_daily s
+		inner join tj_customer c on c.id = s.customer
+		where s.inboundDateTime >= #{startDate}
+		and s.inboundDateTime <= #{endDate}
+		]]>
+        <if test="customerId != null">
+            and s.customer = #{customerId}
+        </if>
+        <![CDATA[
+		group by s.customer, c.name
+		union all
+		select
+		s.customer,
+		c.name as customerName,
+		0 as inboundWeightCount,
+		0 as inboundAmountCount,
+		0 as inboundContainerCount,
+		0 as outboundWeightCount,
+		0 as outboundAmountCount,
+		0 as outboundContainerCount,
+		stockWeightCount,
+		stockAmountCount,
+		stockContainerCount,
+		0 as containerStorage,
+		0 as rentalAreaStorage,
+		0 as weightStorage,
+		0 as amountStorage,
+		0 as shipment,
+		0 as sorting,
+		0 as handling,
+		0 as unloading,
+		0 as shrinkwrap,
+		0 as ketonehandling,
+		0 as writeCode,
+		0 as disposal,
+        0 as colding,
+        0 as sideUnloading,
+        0 as inUnloading,
+		0 as receivableFee,
+		0 as actualFee,
+		0 as receivableBalance
+		from tj_standing_book_daily s
+		inner join tj_customer c on c.id = s.customer
+		where s.inboundDateTime = #{endDate}
+		]]>
+        <if test="customerId != null">
+            and s.customer = #{customerId}
+        </if>
+        <![CDATA[
+		union all
+		select
+		s.customer,
+		c.name as customerName,
+		0 as inboundWeightCount,
+		0 as inboundAmountCount,
+		0 as inboundContainerCount,
+		0 as outboundWeightCount,
+		0 as outboundAmountCount,
+		0 as outboundContainerCount,
+		0 as stockWeightCount,
+		0 as stockAmountCount,
+		0 as stockContainerCount,
+		0 as containerStorage,
+		0 as rentalAreaStorage,
+		0 as weightStorage,
+		0 as amountStorage,
+		0 as shipment,
+		0 as sorting,
+		0 as handling,
+		0 as unloading,
+		0 as shrinkwrap,
+		0 as ketonehandling,
+		0 as writeCode,
+		0 as disposal,
+        0 as colding,
+        0 as sideUnloading,
+        0 as inUnloading,
+		0 as receivableFee,
+		0 as actualFee,
+		
+		receivableBalance
+		from tj_standing_book_daily s
+		inner join tj_customer c on c.id = s.customer
+		where s.inboundDateTime = #{rollingDate}
+		]]>
+        <if test="customerId != null">
+            and s.customer = #{customerId}
+        </if>
+        <![CDATA[
+		) x
+		group by customerId, customerName
+		order by customerId, customerName
+
+        ]]>
+    </select>
+
+    <select id="findFinanceBillingByDateRangeAndCustomerId" resultType="standingBookDaily"
+            useCache="false" parameterType="map">
+        <![CDATA[
+            select
+            s.customer as customerId,
+            c.name as customerName,
+            max(containerStorageRuleComment) as containerStorageRuleComment,
+            sum(containerStorage) as containerStorage,
+            max(rentalAreaStorageRuleComment) as rentalAreaStorageRuleComment,
+            sum(rentalAreaStorage) as rentalAreaStorage,
+            max(weightStorageRuleComment) as weightStorageRuleComment,
+            sum(weightStorage) as weightStorage,
+            max(amountStorageRuleComment) as amountStorageRuleComment,
+            sum(amountStorage) as amountStorage,
+            max(shipmentRuleComment) as shipmentRuleComment,
+            sum(shipment) as shipment,
+            max(sortingRuleComment) as sortingRuleComment,
+            sum(sorting) as sorting,
+            max(handlingRuleComment) as handlingRuleComment,
+            sum(handling) as handling,
+            max(unloadingRuleComment) as unloadingRuleComment,
+            sum(unloading) as unloading,
+            max(shrinkwrapRuleComment) as shrinkwrapRuleComment,
+            sum(shrinkwrap) as shrinkwrap,
+            max(ketonehandlingRuleComment) as ketonehandlingRuleComment,
+            sum(ketonehandling) as ketonehandling,
+            max(writeCodeRuleComment) as writeCodeRuleComment,
+            sum(writeCode) as writeCode,
+            max(disposalRuleComment) as disposalRuleComment,
+            sum(disposal) as disposal,
+            max(coldingRuleComment) as coldingRuleComment,
+            sum(colding) as colding,
+            max(sideUnloadingRuleComment) as sideUnloadingRuleComment,
+            sum(sideUnloading) as sideUnloading,
+            max(inUnloadingRuleComment) as inUnloadingRuleComment,
+            sum(inUnloading) as inUnloading
+            from tj_standing_book_daily s
+            inner join tj_customer c on c.id = s.customer
+            where s.inboundDateTime >= #{startDate}
+            and s.inboundDateTime <= #{endDate}
+            and s.customer = #{customerId}
+            group by s.CUSTOMER, c.name
+        ]]>
+    </select>
+    
+    <select id="findRuleDetail" resultType="java.util.Map" useCache="false" parameterType="map">
+        select customergrade.name as customerGrade,
+	        (CASE
+	        WHEN ruletype.businessType = 'inbound' THEN '入库'
+	        WHEN ruletype.businessType = 'outbound' THEN '出库'
+	        WHEN ruletype.businessType = 'ownerchangeforbuyer' THEN '买方货权转移'
+	        WHEN ruletype.businessType = 'ownerchangeforseller' THEN '卖方货权转移'
+	        ELSE '月结仓储费' END
+	        ) AS businessType,
+        	tjrule.name as ruleName, 
+        	feeitem.name as feeitemName, opertionalitem.itemtitle as calcuTitle, 
+        	calcuitem.factor, packing.name as packType 
+		from tj_ce_rule tjrule
+		left join tj_ce_calculation_item calcuitem on tjrule.id = calcuitem.cerule
+		left join tj_ce_rule_item ruleitem on tjrule.id = ruleitem.cerule
+		inner join tj_customer_grade customergrade on ruleitem.value = customergrade.id
+		left join tj_ce_fee_item feeitem on calcuitem.feeitem = feeitem.id
+		left join tj_ce_optional_item opertionalitem on calcuitem.optionalitem = opertionalitem.id
+		left join tj_ce_condition_item conditionitem on calcuitem.id = conditionitem.calculationitem
+		left join tj_packing packing on conditionitem.value = packing.id
+		left join tj_ce_rule_type ruletype on tjrule.ruletype = ruletype.id
+		where 1 = 1 
+		<if test="customerGradeId != null">
+            and ruleitem.value = #{customerGradeId}
+        </if>
+        <if test="feeItemId != null">
+            and calcuitem.feeitem = #{feeItemId}
+        </if>
+        <if test="businessType != null">
+            and ruletype.businessType = #{businessType}
+        </if>
+		order by tjrule.ruletype,feeitem.id
+    </select>
+    
+    <select id="findStockOutTotalByOutboundRegisterId" resultType="java.util.Map" useCache="false" parameterType="map">
+        select dd.name as PRODUCTNAME,sum(bb.AMOUNT) as AMOUNT,sum(bb.weight) as WEIGHT, count(bb.id) as CONTAINERCOUNT
+			from TJ_STOCK_OUT bb
+				inner join TJ_PRODUCT dd on bb.product = dd.id
+			where bb.outboundregister = #{outboundRegisterId}
+			and bb.stockOutStatus = #{stockOutStatus}
+				group by dd.name
+    </select>
+</mapper>

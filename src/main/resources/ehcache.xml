@@ -1,0 +1,62 @@
+<ehcache>
+
+	<diskStore path="java.io.tmpdir/beetle/hibernate-cache" />
+
+	<defaultCache maxElementsInMemory="100000" eternal="true" overflowToDisk="true" />
+	<cache name="org.hibernate.cache.spi.UpdateTimestampsCache" maxElementsInMemory="10000" maxElementsOnDisk="100000"></cache>
+	<cache name="org.hibernate.cache.internal.StandardQueryCache" maxElementsInMemory="10000" maxElementsOnDisk="100000"></cache>
+
+	<!-- 全局 -->
+	<cache name="globalCache" maxElementsInMemory="50000" maxElementsOnDisk="100000" eternal="true" overflowToDisk="true" />
+	<!-- 保留一天 -->
+	<cache name="dailyCache" maxElementsInMemory="50000" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+	<!-- 临时Cache，保存一小时 -->
+	<cache name="temporaryCache" maxElementsInMemory="50000" timeToIdleSeconds="3600" timeToLiveSeconds="3600" />
+	<!-- 即时Cache，保留180秒 -->
+	<cache name="instantCache" maxElementsInMemory="50000" timeToIdleSeconds="180" timeToLiveSeconds="180" />
+
+    <cache name="com.wwyl.entity.settings.BookingMethod" maxElementsInMemory="500" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.CarrierType" maxElementsInMemory="100" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.ChargeType" maxElementsInMemory="100" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.CustomerGrade" maxElementsInMemory="100" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.MeasureUnit" maxElementsInMemory="100" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.Packing" maxElementsInMemory="100" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.ProductStatus" maxElementsInMemory="100" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.StockAdjustType" maxElementsInMemory="100" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.StockWastageType" maxElementsInMemory="100" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.StoreContainerType" maxElementsInMemory="100" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.StoreLocationType" maxElementsInMemory="100" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.TallyAreaType" maxElementsInMemory="100" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.VehicleType" maxElementsInMemory="100" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.TaxType" maxElementsInMemory="100" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+
+    <cache name="com.wwyl.entity.settings.Area" maxElementsInMemory="10000" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.Carrier" maxElementsInMemory="500" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.Contact" maxElementsInMemory="50000" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.Customer" maxElementsInMemory="10000" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.Department" maxElementsInMemory="100" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.ProductCategory" maxElementsInMemory="100" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.Product" maxElementsInMemory="1000" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.StoreArea" maxElementsInMemory="300" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.settings.TallyArea" maxElementsInMemory="100" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+
+    <cache name="com.wwyl.entity.security.Permission" maxElementsInMemory="500" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.security.Role" maxElementsInMemory="100" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+    <cache name="com.wwyl.entity.security.Operator" maxElementsInMemory="1000" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+
+  <cache name="com.wwyl.entity.settings.StoreContainer" maxElementsInMemory="1000" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+  <cache name="com.wwyl.entity.settings.StoreLocation" maxElementsInMemory="1000" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+  <cache name="com.wwyl.entity.settings.SystemConfig" maxElementsInMemory="1000" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+  <cache name="com.wwyl.entity.truck.ResourceManagement" maxElementsInMemory="1000" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+  <cache name="com.wwyl.entity.settings.StevedorePort" maxElementsInMemory="1000" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+  <cache name="com.wwyl.entity.settings.HandSet" maxElementsInMemory="1000" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+  <cache name="com.wwyl.entity.settings.Department.children" maxElementsInMemory="1000" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+  <cache name="com.wwyl.entity.security.Role.permissions" maxElementsInMemory="1000" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+  <cache name="com.wwyl.entity.security.Operator.permissions" maxElementsInMemory="1000" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+  <cache name="com.wwyl.entity.settings.StoreArea.products" maxElementsInMemory="1000" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+  <cache name="com.wwyl.entity.settings.ProductCategory.children" maxElementsInMemory="1000" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+  <cache name="com.wwyl.entity.security.Permission.children" maxElementsInMemory="1000" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+  <cache name="com.wwyl.entity.settings.Product.children" maxElementsInMemory="1000" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+  <cache name="com.wwyl.entity.security.Operator.roles" maxElementsInMemory="1000" timeToIdleSeconds="86400" timeToLiveSeconds="86400" />
+
+</ehcache>
