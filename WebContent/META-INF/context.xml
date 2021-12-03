@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Context>
+    <Resource auth="Container" description="Tianjin DataSource"
+              name="jdbc/tianjin"
+              type="javax.sql.DataSource"
+              driverClassName="oracle.jdbc.OracleDriver"
+              username="HJX"
+              password="HJX"
+              url="jdbc:oracle:thin:@192.168.1.122:1521:HJXTEST"
+              maxIdle="5" maxWait="5000" maxActive="10"
+              validationQuery="select 1 from dual"
+              />
+    <WatchedResource>WEB-INF/web.xml</WatchedResource>
+    <WatchedResource>META-INF/context.xml</WatchedResource>
+</Context>
