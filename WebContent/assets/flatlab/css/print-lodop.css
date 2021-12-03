@@ -1,0 +1,62 @@
+.print-header, .print-content {
+    width: 770px;
+    margin: 0px;
+    padding: 0px;
+}
+.print-header h1, .print-header h2, .print-content h1, .print-content h2 {
+    font-size: 20px;
+    text-align: center;
+    line-height: 20px;
+    margin-top: 0;
+    margin-bottom: 8px;
+}
+.print-content, table.gridtable {
+    font-family: verdana,arial,sans-serif;
+    font-size: 12px;
+}
+table.gridtable, table.gridtable td {
+    border-collapse: collapse;
+}
+table.gridtable th {
+    display: auto;
+    border: 0pt solid windowtext;
+    padding: 0px;
+}
+table.gridtable td {
+    text-align: center;
+    height: 20px;
+    padding: 2px;
+    border: 1pt solid windowtext;
+}
+table.gridtable td span {
+    text-align: left;
+    display: inline-block;
+    width: 244px;
+}
+.clearfix {
+    clear: both;
+}
+.print-header .title {
+    margin-left: 200px;
+    float: left;
+    width: 370px;
+}
+.print-header .barcode {
+    float: right;
+    width: 200px;
+    text-align: right;
+    font-size: 20px;
+    padding-top: 10px;
+}
+
+.spanstyle{
+	valign:middle;   
+    font-size: 14px;	    
+    text-align: left;         
+    display: inline-block;     
+    width: 250px;
+}
+.print-content p {
+    margin-top: 8px;
+    margin-bottom: 0px;
+}
